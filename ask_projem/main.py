@@ -2,31 +2,23 @@ import streamlit as st
 import pandas as pd
 import os
 import random
-import hashlib
 from datetime import date
 from PIL import Image
 
 # Sayfa yapılandırması
 st.set_page_config(page_title="Bizim Sayfamız", layout="centered")
 
-# --- GÜVENLİK FONKSİYONU ---
-def make_hashes(password):
-    """Şifreyi güvenli bir hash dizisine dönüştürür."""
-    return hashlib.sha256(str.encode(password)).hexdigest()
-
-def check_hashes(password, hashed_text):
-    """Girilmiş şifrenin doğruluğunu kontrol eder."""
-    return make_hashes(password) == hashed_text
-
 # --- GİRİŞ BİLGİLERİ ---
-# Şifre: 17.04.2025
-hashed_password = "405f6e80b4356c3818e692a83e05391e4429623e1059f3d6718d0526e082877a"
-target_username = "musabsila"
+# Bilgileri buraya tanımlıyoruz (Küçük harfe duyarlı yaptık)
+DOĞRU_KULLANICI = "musabsila"
+DOĞRU_SIFRE = "17.04.2025"
 
+# --- OTURUM YÖNETİMİ ---
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 
 def login():
+    # Görsel Yolu
     giris_resmi_yolu = os.path.join("fotograflar", "giris_fotosu.jpg")
     
     if os.path.exists(giris_resmi_yolu):
@@ -34,40 +26,41 @@ def login():
     
     st.title("❤️ Hoş Geldin ❤️")
     
-    # .strip() ekleyerek yanlışlıkla girilen boşlukları temizliyoruz
-    username = st.text_input("Kullanıcı Adı").strip()
-    password = st.text_input("Şifre", type="password").strip()
+    # Giriş Kutuları (strip() ile görünmez boşlukları siliyoruz)
+    user_input = st.text_input("Kullanıcı Adı").lower().strip()
+    pass_input = st.text_input("Şifre", type="password").strip()
     
     if st.button("Giriş"):
-        if username == target_username and check_hashes(password, hashed_password):
+        if user_input == DOĞRU_KULLANICI and pass_input == DOĞRU_SIFRE:
             st.session_state['authenticated'] = True
-            st.success("Giriş başarılı! Yükleniyor...")
+            st.success("Harika! Giriş yapıldı...")
             st.rerun()
         else:
             st.error("Kullanıcı adı veya şifre hatalı!")
-            # Hata devam ederse burayı aktif edip ne yazdığını kontrol edebilirsin:
-            # st.write(f"Yazılan: {username}, Şifre Hash: {make_hashes(password)}")
+            # HATA AYIKLAMA (Eğer giriş yapamazsan buradaki bilgileri kontrol et)
+            st.info(f"Yazdığın Kullanıcı: '{user_input}'")
+            st.info(f"Yazdığın Şifre Karakter Sayısı: {len(pass_input)}")
 
 if not st.session_state['authenticated']:
     login()
 else:
-    # --- VERİLERİ YÜKLEME ---
+    # --- UYGULAMA İÇERİĞİ (Giriş Başarılıysa) ---
+    st.sidebar.title("Menü")
+    
+    # Veri yükleme işlemleri
     try:
         df = pd.read_excel("siirler.xlsx")
         siir_listesi = df["Şiir"].tolist()
     except:
-        siir_listesi = ["Şiir dosyası bulunamadı."]
+        siir_listesi = ["Henüz bir şiir eklenmemiş."]
 
     foto_klasoru = "fotograflar"
     foto_listesi = []
     if os.path.exists(foto_klasoru):
         foto_listesi = [f for f in os.listdir(foto_klasoru) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
-    # --- MENÜ ---
-    st.sidebar.title("Menü")
     page = st.sidebar.radio("Sayfalar", ["Günün Sürprizi", "Fotoğraflarımız", "Şiir Arşivi"])
 
-    # --- SAYFA İÇERİKLERİ ---
     if page == "Günün Sürprizi":
         st.header("Bugünün Bize Mesajı ❤️")
         if siir_listesi and foto_listesi:
