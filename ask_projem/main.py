@@ -12,20 +12,30 @@ st.set_page_config(page_title="Bizim Sayfamız", layout="centered")
 if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 
+
 def login():
-    st.image("giris_fotosu.jpg", use_container_width=True)
+    # Resim yolu güncellendi: 'fotograflar' klasörü altındaki 'giris_fotosu.jpg'
+    giris_resmi_yolu = os.path.join("fotograflar", "giris_fotosu.jpg")
+
+    # Resim dosyası var mı kontrol edelim
+    if os.path.exists(giris_resmi_yolu):
+        st.image(giris_resmi_yolu, use_container_width=True)
+    else:
+        st.warning(f"Giriş fotoğrafı bulunamadı: {giris_resmi_yolu}")
+
     st.title("❤️ Hoş Geldin ❤️")
-    
+
     username = st.text_input("Kullanıcı Adı")
     password = st.text_input("Şifre", type="password")
-    
+
     if st.button("Giriş"):
-        # Buradaki bilgileri kendine göre değiştirebilirsin
-        if username == "askim" and password == "12345": 
+        # Bilgiler
+        if username == "askim" and password == "12345":
             st.session_state['authenticated'] = True
             st.rerun()
         else:
             st.error("Hatalı kullanıcı adı veya şifre!")
+
 
 if not st.session_state['authenticated']:
     login()
@@ -46,15 +56,16 @@ else:
     # --- 1. SAYFA: GÜNÜN SÜRPRİZİ ---
     if page == "Günün Sürprizi":
         st.header("Bugünün Bize Mesajı ❤️")
-        
+
         # Her gün 00:00'da değişen seçim mekanizması
         today_seed = date.today().toordinal()
         random.seed(today_seed)
-        
+
         gunun_siiri = random.choice(siir_listesi)
         gunun_fotosu_adi = random.choice(foto_listesi)
-        
-        img = Image.open(os.path.join(foto_klasoru, gunun_fotosu_adi))
+
+        img_path = os.path.join(foto_klasoru, gunun_fotosu_adi)
+        img = Image.open(img_path)
         st.image(img, use_container_width=True)
         st.markdown(f"### *{gunun_siiri}*")
 
@@ -62,7 +73,8 @@ else:
     elif page == "Fotoğraflarımız":
         st.header("Anılarımız 📸")
         for foto in foto_listesi:
-            img = Image.open(os.path.join(foto_klasoru, foto))
+            img_path = os.path.join(foto_klasoru, foto)
+            img = Image.open(img_path)
             st.image(img, use_container_width=True)
             st.write("---")
 
