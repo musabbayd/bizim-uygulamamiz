@@ -16,14 +16,13 @@ if 'authenticated' not in st.session_state:
     st.session_state['authenticated'] = False
 
 def login():
-    # Giriş fotoğrafı artık doğrudan ana dizinde
+    # Giriş fotoğrafı ana dizinde
     giris_resmi = "giris_fotosu.jpg"
     
     if os.path.exists(giris_resmi):
         st.image(giris_resmi, use_container_width=True)
     else:
-        # Dosya bulunamazsa hata vermemesi için uyarı gösterir
-        st.warning(f"Giriş fotoğrafı ({giris_resmi}) ana dizinde bulunamadı.")
+        st.warning(f"⚠️ '{giris_resmi}' bulunamadı. Lütfen GitHub'da dosya adının tam olarak bu olduğundan emin ol.")
     
     st.title("❤️ Hoş Geldin ❤️")
     user_input = st.text_input("Kullanıcı Adı").lower().strip()
@@ -39,47 +38,42 @@ def login():
 if not st.session_state['authenticated']:
     login()
 else:
-    # --- VERİLERİ YÜKLEME ---
-    # Fotoğraflar klasörü yolu
+    # --- VERİ YÜKLEME ---
     foto_klasoru = "fotograflar"
+    siir_dosyasi = "siirler.xlsx"
     
-    # fotograflar klasöründeki jpeg, jpg ve png dosyalarını listele
+    # Fotoğrafları Listele
     foto_listesi = []
     if os.path.exists(foto_klasoru):
+        # .jpeg, .jpg, .png ve büyük harf versiyonlarını (.JPG) destekle
         foto_listesi = [f for f in os.listdir(foto_klasoru) 
                         if f.lower().endswith(('.jpeg', '.jpg', '.png'))]
-
-    # Şiirleri yükle
+    
+    # Şiirleri Yükle
     siir_listesi = []
-    if os.path.exists("siirler.xlsx"):
+    if os.path.exists(siir_dosyasi):
         try:
-            df = pd.read_excel("siirler.xlsx")
-            # İlk sütunu şiir içeriği olarak kabul et
+            df = pd.read_excel(siir_dosyasi)
             siir_listesi = df.iloc[:, 0].dropna().tolist()
         except Exception as e:
-            siir_listesi = [f"Şiirler yüklenirken bir hata oluştu: {e}"]
-    else:
-        siir_listesi = ["siirler.xlsx dosyası bulunamadı."]
-
+            st.error(f"Excel okuma hatası: {e}")
+    
     # --- MENÜ ---
     st.sidebar.title("Menü")
     page = st.sidebar.radio("Sayfalar", ["Günün Sürprizi", "Fotoğraflarımız", "Şiir Arşivi"])
 
-    # --- 1. SAYFA: GÜNÜN SÜRPRİZİ ---
+    # --- SAYFALAR ---
     if page == "Günün Sürprizi":
         st.header("Bugünün Bize Mesajı ❤️")
         if siir_listesi and foto_listesi:
-            # Seçimi güne sabitlemek için günün tarihini seed olarak kullan
             random.seed(date.today().toordinal())
-            secilen_siir = random.choice(siir_listesi)
-            secilen_foto = random.choice(foto_listesi)
-            
-            st.image(os.path.join(foto_klasoru, secilen_foto), use_container_width=True)
-            st.markdown(f"### *{secilen_siir}*")
+            s_siir = random.choice(siir_listesi)
+            s_foto = random.choice(foto_listesi)
+            st.image(os.path.join(foto_klasoru, s_foto), use_container_width=True)
+            st.markdown(f"### *{s_siir}*")
         else:
-            st.warning("Görüntülenecek içerik (şiir veya fotoğraf) bulunamadı.")
+            st.warning("Günün sürprizi için şiir veya fotoğraf yüklenemedi.")
 
-    # --- 2. SAYFA: FOTOĞRAFLARIMIZ ---
     elif page == "Fotoğraflarımız":
         st.header("Anılarımız 📸")
         if foto_listesi:
@@ -87,18 +81,26 @@ else:
                 st.image(os.path.join(foto_klasoru, foto), use_container_width=True)
                 st.write("---")
         else:
-            st.info("fotograflar klasöründe görüntülenecek fotoğraf bulunamadı.")
+            st.info(f"'{foto_klasoru}' klasörü içinde uygun formatta fotoğraf bulunamadı.")
 
-    # --- 3. SAYFA: ŞİİR ARŞİVİ ---
     elif page == "Şiir Arşivi":
         st.header("Güzel Sözler & Şiirler 📜")
         if siir_listesi:
             for s in siir_listesi:
                 st.info(s)
         else:
-            st.info("Arşivde gösterilecek şiir bulunamadı.")
+            st.info("Şiir listesi boş görünüyor.")
 
-    # Çıkış Yap Butonu
+    # --- TEŞHİS PANELİ (Hata Çözmek İçin) ---
+    st.markdown("---")
+    with st.expander("🔍 Dosya Kontrol Paneli (Hata buradaysa tıkla)"):
+        st.write("**Mevcut Klasör Yolu:**", os.getcwd())
+        st.write("**Ana Dizindeki Dosyalar:**", os.listdir("."))
+        if os.path.exists(foto_klasoru):
+            st.write(f"**'{foto_klasoru}' İçindeki Dosyalar:**", os.listdir(foto_klasoru))
+        else:
+            st.error(f"'{foto_klasoru}' klasörü sistemde fiziksel olarak yok!")
+
     if st.sidebar.button("Çıkış Yap"):
         st.session_state['authenticated'] = False
         st.rerun()
